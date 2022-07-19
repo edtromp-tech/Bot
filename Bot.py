@@ -7,7 +7,7 @@ import time
 
 sleep_array = [10,15,20,25,30,35,40,45,50,55,60,65,70]
 print('Loading Generator')
-generator = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B')
+generator = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B')#change to 2.7B but will cost 10GB
 
 ACCESS_TOKEN = "your creds"
 ACCESS_TOKEN_SECRET = "your creds"

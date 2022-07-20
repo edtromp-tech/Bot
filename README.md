@@ -20,6 +20,13 @@ Not currently available
 	* Class Bot
 	* Threading
 	* Name your Bots
+	* Post about weather
+	* Post about news
+	* thank people for following the bot in DM or publicly 
+	* Utilize Tweet storm in twitter (Post an article within one thread of multiple tweets)
+	* Notify real person when a key word is hit in a question 
+	* share things that go wrong in life
+	* 250 character atomic essay
 	
 ## Systems
 	* Twitter
@@ -33,8 +40,15 @@ Not currently available
 	* LinkedIn
 	
 ## Questions
-	* Do I need to chose a topic?
+	* Do I need to chose a topic? (Choose 3 main topics)
 	* How many Bots do I want to run? 
+
+## Integrations
+	* Copy.ai
+	* Hotpot.ai
+	* deep-nastalgia
+	* Lumen5
+	
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

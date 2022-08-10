@@ -1,5 +1,4 @@
 # Bot
-## _Automating all Social Media_
 Bot is a Python library that creates a bot to interact with multiple social media platforms. 
 
 ## Donate a cup of coffee

@@ -1,12 +1,15 @@
-from transformers import pipeline
+#from transformers import pipeline
 from tweepy import OAuthHandler, Cursor, API
 import os
 from random import choice, randint
 import time
 import logging
 import pandas as pd
-
+from random import randrange
 logger = logging.getLogger()
+
+BASE_DIR = 'C:\\Users\\etromp\\OneDrive - ZTRIP\\Bot\\'
+
 
 
 class Twitter_Bot:
@@ -125,9 +128,15 @@ class Twitter_Bot:
         return tweets_df
 
 
-
-
-
+    def post_tweets(self, api, tweet, image = None):
+        # Upload image
+        if image != None:
+            media = api.media_upload(image)
+            # Post tweet with image
+            post_result = api.update_status(status=tweet, media_ids=[media.media_id])
+        else:
+            post_result = api.update_status(status=tweet)
+        print(post_result)
 
 sleep_array = [10,15,20,25,30,35,40,45,50,55,60,65,70]
 
@@ -137,62 +146,209 @@ print('Loading Generator')
 #EleutherAI/gpt-neo-2.7B
 #generator = pipeline('text-generation', model='EleutherAI/gpt-neo-125M')
 
+def getNews(query):
+    print('Getting News...')
+    import requests
+    import pandas as pd
+    from json import dumps, loads
+    f = BASE_DIR + 'private.csv'
+
+    df = pd.read_csv(f, header=None, index_col=False)
+    df.columns = ['Name', 'Value']
+    key = df.loc[df['Name'] == 'X-RapidAPI-Key', 'Value'].values[0]
+    host = df.loc[df['Name'] == 'X-RapidAPI-Host', 'Value'].values[0]
+
+    url = "https://contextualwebsearch-websearch-v1.p.rapidapi.com/api/Search/ImageSearchAPI"
+    headers = {
+        "X-RapidAPI-Key": key,
+        "X-RapidAPI-Host": host
+    }
+
+
+    querystring = {"q": query, "pageNumber": "1", "pageSize": "5", "autoCorrect": "true"}
+    response = requests.request("GET", url, headers=headers, params=querystring)
+
+    res = loads(response.text)
+    tmp = res['value']
+    df = pd.read_json(dumps(tmp))
+
+    loop_count = 0
+    while True:
+        if df.shape()[0] <=0:
+            post = "I thought I had a good news article but I must have misplaced it.  \n#DaveTheBot #Automation #forgetfull"
+            break
+        image_url = df.iloc[loop_count]['url']
+        web_url = df.iloc[loop_count]['webpageUrl']
+        post = df.iloc[loop_count]['title']
+
+        img_data = requests.get(image_url).content
+        img_name = BASE_DIR + 'test_image.jpg'
+        with open(img_name, 'wb') as handler:
+            handler.write(img_data)
+        img_name = BASE_DIR + 'test_image.jpg'
+
+        post = "News Drop\n\n" + post + "\n" + web_url + "\n\n#DaveTheBot #automation #" + query
+        if len(post) < 250:
+            break
+
+        if loop_count > 4:
+            post = "I thought I had a good news article but I must have misplaced it. #forgetfull #DaveTheBot #automation"
+            break
+        loop_count += 1
+
+    return post, img_name
+
+def getImages(query):
+    print('Getting images...')
+    import requests
+    import pandas as pd
+    from json import dumps, loads
+    f = BASE_DIR + 'private.csv'
+
+    df = pd.read_csv(f, header=None, index_col=False)
+    df.columns = ['Name', 'Value']
+    key = df.loc[df['Name'] == 'X-RapidAPI-Key', 'Value'].values[0]
+    host = df.loc[df['Name'] == 'X-RapidAPI-Host', 'Value'].values[0]
+
+    url = "https://contextualwebsearch-websearch-v1.p.rapidapi.com/api/Search/ImageSearchAPI"
+
+    querystring = {"q":query,"pageNumber":"1","pageSize":"5","autoCorrect":"true","safeSearch":"false"}
+
+    headers = {
+        "X-RapidAPI-Key": key,
+        "X-RapidAPI-Host": host
+    }
+    response = requests.request("GET", url, headers=headers, params=querystring)
+
+    res = loads(response.text)
+    tmp = res['value']
+    df = pd.read_json(dumps(tmp))
+    image_url = df.iloc[randrange(5)]['url']
+
+    img_data = requests.get(image_url).content
+    img_name = BASE_DIR + 'test_image.jpg'
+    with open(img_name, 'wb') as handler:
+        handler.write(img_data)
+    post = "#DaveTheBot #automation"
+    return post, BASE_DIR + 'test_image.jpg'
+
+def getQuote(query):
+    print('Getting quotes...')
+    import requests
+    import pandas as pd
+    from json import dumps, loads
+    f = BASE_DIR + 'private.csv'
+
+    df = pd.read_csv(f, header=None, index_col=False)
+    df.columns = ['Name', 'Value']
+    key = df.loc[df['Name'] == 'ZenQuotes-Key', 'Value'].values[0]
+
+    url = "https://zenquotes.io/api/quotes/"+key
+    #url = "https://zenquotes.io/api/random/"+key
+
+    querystring = {"keyword": query}
+    response = requests.request("GET", url, params=querystring)
+
+    print(response.text)
+
+    res = loads(response.text)
+    df = pd.read_json(dumps(res))
+    return df
 
 
 
 
+#https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list?apix_params=%7B%22cx%22%3A%220105d7b0bed374fee%22%2C%22imgSize%22%3A%22MEDIUM%22%2C%22num%22%3A5%2C%22q%22%3A%22image%20spiritual%20quote%20%22%7D
+def getGoogleTest(query):
+    import requests
+    f = BASE_DIR + 'private.csv'
+
+    df = pd.read_csv(f, header=None, index_col=False)
+    df.columns = ['Name', 'Value']
+    key = df.loc[df['Name'] == 'Google-API', 'Value'].values[0]
+    engine = df.loc[df['Name'] == 'Google-Engine-ID', 'Value'].values[0]
+    url = 'https://customsearch.googleapis.com/customsearch/v1'
+    querystring = {"q": query, "key": key, "cx": engine,"num":"5"}
+    response = requests.request("GET", url, params=querystring)
+
+    print(response.text)
+    return
+
+'''
 def generate_post(criteria, topic, max_length=None):
     import tokenizers
     print("Generating post on topic: " + topic)
     text = criteria + topic
     post = generator(text, max_length=max_length, do_sample=True, temperature=0.9,**encoded_input, pad_token_id=tokenizer.eos_token_id)[0]['generated_text']
     return post
-
+'''
 def pick_a_topic(m):
     return randint(1,m)
 
 def run_bot():
-    #T_Bot = Twitter_Bot('Dave', ['','','',''], 'transportation')
-    #api = T_Bot.twitterLogOn()
+    T_Bot = Twitter_Bot('David', ['spiritual', 'life', 'yoga', 'mindfulness' 'love'], 1)
+    f = BASE_DIR + 'private.csv'
+
+    df = pd.read_csv(f, header=None, index_col=False)
+    df.columns = ['Name', 'Value']
+    at = df.loc[df['Name'] == 'ACCESS_TOKEN', 'Value'].values[0]
+    ats = df.loc[df['Name'] == 'ACCESS_TOKEN_SECRET', 'Value'].values[0]
+    ck = df.loc[df['Name'] == 'CONSUMER_KEY', 'Value'].values[0]
+    cks = df.loc[df['Name'] == 'CONSUMER_SECRET', 'Value'].values[0]
+
+    api = T_Bot.twitterLogOn(
+        ACCESS_TOKEN=at
+        , ACCESS_TOKEN_SECRET=ats
+        , CONSUMER_KEY=ck
+        , CONSUMER_SECRET=cks
+    )
     while True:
         index = pick_a_topic(3)
+        topic_search = choice(T_Bot.bot_core_values)
+        img_name = None
+        df_quotes_index = 0
 
         if index == 1:
-            #trending = T_Bot.get_trending()
-            #topic = choice(trending)
-            post = generate_post('', 'What is beyond this life?',250)
+            post, img_name = getNews(topic_search)
         elif index == 2:
-            post = generate_post('',"dad joke",250)
+            hashtag = topic_search
+            topic_search += ' quotes'
+            post, img_name = getImages(topic_search)
+            post += " #" +hashtag
         elif index == 3:
-            post = generate_post('',"something nice about mom",250)
-
+            if df_quotes_index > df_quotes.shape()[0]:
+                df_quotes = getQuote(topic_search)
+            q = df_quotes.iloc[df_quotes_index]['q']
+            a = df_quotes.iloc[df_quotes_index]['a']
+            p = 'Provided by https://zenquotes.io/'
+            h = '#DaveTheBot #Automation #' +topic_search
+            post = q + '\n' + a + '\n' + h + '\n\n' + p
+            df_quotes_index += 1
 
         print("I am tweeting: " + post)
-        #api.update_status(tweet)
+        T_Bot.post_tweets(api,post, img_name)
 
         sleep = choice(sleep_array)
         print('Waiting ' + str(sleep) + ' minutes.')
         time.sleep(sleep*60)
-   
-T_Bot = Twitter_Bot('David', ['spiritual', 'shaman', 'yoga', 'mindfulness'], 1)
-api = T_Bot.twitterLogOn(
-    ACCESS_TOKEN = '1549572554997653504-58niqDXQthF8qRdBkIQn9MDpRqQHXb'
-    ,ACCESS_TOKEN_SECRET = 'GL5ec1liwjAuwJFZCpUhO8XKmU371Q5EGWPpdYrVSS77d'
-    ,CONSUMER_KEY = 'lDlPWJItFyiLaqGEGpV00z3F9'
-    ,CONSUMER_SECRET = 'YQkTTTNMTGZJs5JAR5J7zDvyCHS8k90KCBi0U0veVmJMm1x5dp'
-)
+
+
 
 #https://developer.twitter.com/en/docs/twitter-api/tweets/search/integrate/build-a-query
-query = '(' + " OR ".join(T_Bot.bot_core_values) + ') (-has:links AND -is:retweet AND -is:reply AND -is:nullcast AND -has:mentions)'
-print(query)
+#query = '(' + " OR ".join(T_Bot.bot_core_values) + ') (-has:links AND -is:retweet AND -is:reply AND -is:nullcast AND -has:mentions)'
+#print(query)
 #"#spiritual -filter:retweets"
 
-df = T_Bot.get_tweets(api, query , '2022-07-01', 100)
-print('printing df')
-print(df)
-df.to_csv('/Users\etromp\Desktop\Bot\\test.csv')
+#df = T_Bot.get_tweets(api, query, '2022-07-01', 100)
+#rint('printing df')
+#print(df)
+#df.to_csv('/Users\etromp\Desktop\Bot\\test.csv')
 
 
 
-#if __name__ == "__main__":
-    #run_bot()
+if __name__ == "__main__":
+    run_bot()
+
+
+
+
